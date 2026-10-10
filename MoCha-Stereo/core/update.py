@@ -149,6 +149,9 @@ class LSTM(nn.Module):
         self.conv_c_t = nn.Conv2d(hidden_dim + input_dim, hidden_dim, kernel_size, padding=kernel_size // 2)
         self.conv_ft = nn.Conv2d(hidden_dim + input_dim, hidden_dim, kernel_size, padding=kernel_size // 2)
         self.conv_ot = nn.Conv2d(hidden_dim + input_dim, hidden_dim, kernel_size, padding=kernel_size // 2)
+        # forward() runs the four gate convs as one conv: they must share kernel size, stride, padding and dilation
+        assert len({(m.kernel_size, m.stride, m.padding, m.dilation, m.groups) for m in
+                    (self.conv_ft, self.conv_it, self.conv_c_t, self.conv_ot)}) == 1
         self.m = Mogrifier(
             dim=hidden_dim,
             iters=5,  # number of iterations, defaults to 5 as paper recommended for LSTM
@@ -162,11 +165,17 @@ class LSTM(nn.Module):
         if x.shape[1] == h.shape[1]:
             x, h = self.m(x, h)
         hx = torch.cat([h, x], dim=1)
-        ft = torch.sigmoid(self.conv_ft(hx) + bf)  # bf是bias ft = forget_gate
-        it = torch.sigmoid(self.conv_it(hx) + bi)
-        c_t = torch.tanh(self.conv_c_t(hx) + bc)
+        # the four gate convs as one conv (same weights, concatenated). This bypasses the four nn.Conv2d modules,
+        # so forward hooks / quantization wrappers attached to them are not called; the parameters stay in them.
+        convs = (self.conv_ft, self.conv_it, self.conv_c_t, self.conv_ot)
+        g = F.conv2d(hx, torch.cat([m.weight for m in convs], 0), torch.cat([m.bias for m in convs], 0),
+                     padding=self.conv_ft.padding) + torch.cat([bf, bi, bc, bo], 1)
+        gf, gi, gc, go = g.chunk(4, dim=1)
+        ft = torch.sigmoid(gf)  # bf是bias ft = forget_gate
+        it = torch.sigmoid(gi)
+        c_t = torch.tanh(gc)
         ct = c * ft + it * c_t
-        ot = torch.sigmoid(self.conv_ot(hx) + bo)
+        ot = torch.sigmoid(go)
         ht = ot * torch.tanh(ct)
         return ct, ht
 
