@@ -37,8 +37,7 @@ class Combined_Geo_Encoding_Volume:
         out_pyramid = []
         for i in range(self.num_levels):
             geo_volume = self.geo_volume_pyramid[i]
-            dx = torch.linspace(-r, r, 2*r+1)
-            dx = dx.view(1, 1, 2*r+1, 1).to(disp.device)
+            dx = torch.arange(-r, r + 1, device=disp.device, dtype=torch.float32).view(1, 1, 2*r+1, 1)
             x0 = dx + disp.reshape(b*h*w, 1, 1, 1) / 2**i
             y0 = torch.zeros_like(x0)
 
