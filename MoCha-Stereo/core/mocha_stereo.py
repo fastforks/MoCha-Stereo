@@ -221,7 +221,8 @@ class Mocha(nn.Module):
             disp_up = self.upsample_disp(disp, mask_feat_4, stem_2x)
             # Consistency Filter Refinement
             if itr == iters - 1:
-                refine_value = self.REMP(disp_up, image1, image2)
+                with autocast(enabled=self.args.mixed_precision):  # warp (grid_sample) stays fp32 under autocast
+                    refine_value = self.REMP(disp_up, image1, image2).float()
                 disp_up = disp_up + refine_value
 
             disp_preds.append(disp_up)
