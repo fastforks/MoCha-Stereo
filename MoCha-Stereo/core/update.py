@@ -187,7 +187,8 @@ class LSTMMultiUpdateBlock(nn.Module):
             nn.Conv2d(hidden_dims[2], 32, 3, padding=1),
             nn.ReLU(inplace=True))
 
-    def forward(self, netC, netH, inp, corr=None, disp=None, iter04=True, iter08=True, iter16=True, update=True):
+    def forward(self, netC, netH, inp, corr=None, disp=None, iter04=True, iter08=True, iter16=True, update=True,
+                compute_mask=True):
 
         if iter16:
             netC[2], netH[2] = self.lstm16(netC[2], netH[2], *(inp[2]), pool2x(netH[1]))
@@ -207,5 +208,5 @@ class LSTMMultiUpdateBlock(nn.Module):
             return netH
 
         delta_disp = self.disp_head(netH[0])
-        mask_feat_4 = self.mask_feat_4(netH[0])
+        mask_feat_4 = self.mask_feat_4(netH[0]) if compute_mask else None
         return netC, netH, mask_feat_4, delta_disp

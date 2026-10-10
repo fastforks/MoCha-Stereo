@@ -211,7 +211,8 @@ class Mocha(nn.Module):
 
                 netC, net_list, mask_feat_4, delta_disp = self.update_block(netC, net_list, inp_list, geo_feat, disp,
                                                                             iter16=self.args.n_gru_layers == 3,
-                                                                            iter08=self.args.n_gru_layers >= 2)
+                                                                            iter08=self.args.n_gru_layers >= 2,
+                                                                            compute_mask=not test_mode or itr == iters - 1)
 
             disp = disp + delta_disp
             if test_mode and itr < iters-1:
