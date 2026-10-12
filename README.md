@@ -1,6 +1,6 @@
 # MoCha-Stereo (MoCha-V2): faster inference fork
 
-> **You are on `fast`.** Research fork of [ZYangChen/MoCha-Stereo](https://github.com/ZYangChen/MoCha-Stereo) (base `78c5889`; `main` mirrors upstream). Branches:
+> **You are on `kernels`.** Research fork of [ZYangChen/MoCha-Stereo](https://github.com/ZYangChen/MoCha-Stereo) (base `78c5889`; `main` mirrors upstream). Branches:
 > - [`fast`](https://github.com/fastforks/MoCha-Stereo/tree/fast): plain PyTorch, no build step, no new dependency, exports with `torch.export`.
 > - [`kernels`](https://github.com/fastforks/MoCha-Stereo/tree/kernels): `fast` plus custom CUDA / CUTLASS kernels in a separate fp16 path (`Mocha.forward_fast`; prebuilt for sm_80 to sm_120).
 > - [`pr/*`](https://github.com/fastforks/MoCha-Stereo/branches): the four small changes proposed upstream, one branch each (`pr/combined` = all four).
