@@ -1,3 +1,39 @@
+# MoCha-Stereo (MoCha-V2): faster inference fork
+
+> **You are on `fast`.** Research fork of [ZYangChen/MoCha-Stereo](https://github.com/ZYangChen/MoCha-Stereo) (base `78c5889`; `main` mirrors upstream). Branches:
+> - [`fast`](https://github.com/fastforks/MoCha-Stereo/tree/fast): plain PyTorch, no build step, no new dependency, exports with `torch.export`.
+> - [`kernels`](https://github.com/fastforks/MoCha-Stereo/tree/kernels): `fast` plus custom CUDA / CUTLASS kernels in a separate fp16 path (`Mocha.forward_fast`; prebuilt for sm_80 to sm_120).
+> - [`pr/*`](https://github.com/fastforks/MoCha-Stereo/branches): the four small changes proposed upstream, one branch each (`pr/combined` = all four).
+>
+> Licence, as upstream: code MIT · weights: linked from the upstream README, not re-hosted here.
+
+MoCha-Stereo (released V1 checkpoint, stock code incl. the stock MCCV), 32 iterations, input 1482x994 (Middlebury-H size, padded to /32). RTX 5060 Ti 16 GB, torch 2.14.1+cu130, 2026-10-12. Median of 10 runs after warm-up; memory = torch peak allocated / reserved. Accuracy: mean |disparity difference| to upstream fp32 on 7 ETH3D + 5 Middlebury-H training pairs (px), and ground-truth EPE.
+
+| level | ms | speed-up | peak MB alloc / reserved | accuracy vs upstream fp32 |
+|---|---|---|---|---|
+| upstream default (fp32) | 3252 | 1.00x | 3763 / 4670 | reference (EPE ETH3D 0.317, Midd-H 0.941) |
+| + realistic upstream PRs, no flags (fp32; bitwise equal output) | 3036 | 1.07x | 3761 / 4670 | identical |
+| + flags only (`mixed_precision`, channels_last, cudnn.benchmark, TF32) | 1395 | 2.33x | 3420 / 4074 | 0.003 / 0.013 px; EPE 0.318 / 0.938 |
+| + realistic upstream PRs (`pr/combined`, with the flags) | 1188 | 2.74x | 2517 / 3386 | 0.003 / 0.013 px; EPE 0.318 / 0.939 |
+| fork `fast` (friendly) | 1188 | 2.74x | 2517 / 3386 | identical to the row above |
+| fork `kernels` (max) | 487 | 6.68x | 1636 / 2282 | 0.004 / 0.014 px; EPE 0.318 / 0.939 |
+
+**Realistically mergeable upstream: 2.74x of 6.68x**
+
+All friendly changes are small enough to be upstream PRs, so `fast` is the same code as `pr/combined` (rows 4 and 5 are one measurement). Cost of the flags row: start-up 4.0 s, first call 9.0 s (cudnn.benchmark; about 1.1 s without it), new input size 4.3 s with cudnn.benchmark. `kernels`: start-up 4.2 s, first call 0.72 s, new size 0.17 s. KITTI size: 1319 ms upstream, 369 ms `fast`, 174 ms `kernels`.
+
+Realistic upstream PRs (ms saved with fp16 autocast alone, vs 1483 ms for autocast alone; 1306 ms all four together; they do not add up exactly):
+- `pr/merged-lstm-gates`: the four LSTM gate convs as one conv, -78 ms (draft `02_PR_merged_lstm_gates.md`)
+- `pr/remp-autocast`: REMP refinement under the autocast flag, -73 ms and -376 MB reserved (-558 MB allocated) (`04_PR_remp_autocast.md`)
+- `pr/sync-free-lookup`: no host sync in `bilinear_sampler` (the `torch.unique` assert blocks `torch.export`), -12 ms (`01_PR_sync_free_lookup.md`)
+- `pr/skip-mask-feat`: upsampling-mask features only on the last iteration, -9 ms (`03_PR_skip_mask_feat.md`)
+
+Fork-only: the `kernels` path ships custom CUDA / CUTLASS kernels, prebuilt binaries and a second inference code path; far too large and too hardware-specific to review as an upstream PR.
+
+Note: measured with the released MoCha-Stereo (V1) checkpoint on the unmodified upstream code. The released V2 checkpoint holds weights for a V2 `CCV` module that is not in the upstream repository, so it cannot be run with the stock MCCV.
+
+---
+
 # MoCha-Stereo 抹茶算法
 + [CVPR2024] The official implementation of "[MoCha-Stereo: Motif Channel Attention Network for Stereo Matching](https://github.com/ZYangChen/MoCha-Stereo/tree/main/MoCha-Stereo)".
 + [arXiv] The extension version of MoCha-Stereo. "Motif Channel Opened in a White-Box: Stereo Matching via Motif Correlation Graph"
