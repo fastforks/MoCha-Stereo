@@ -9,14 +9,14 @@
 
 MoCha-Stereo (released V1 checkpoint, stock code incl. the stock MCCV), 32 iterations, input 1482x994 (Middlebury-H size, padded to /32). RTX 5060 Ti 16 GB, torch 2.14.1+cu130, 2026-10-12. Median of 10 runs after warm-up; memory = torch peak allocated / reserved. Accuracy: mean |disparity difference| to upstream fp32 on 7 ETH3D + 5 Middlebury-H training pairs (px), and ground-truth EPE.
 
-| level | ms | speed-up | peak MB alloc / reserved | accuracy vs upstream fp32 |
+| level | ms | speed-up (vs flags / vs upstream) | peak MB alloc / reserved | accuracy vs upstream fp32 |
 |---|---|---|---|---|
-| upstream default (fp32) | 3252 | 1.00x | 3763 / 4670 | reference (EPE ETH3D 0.317, Midd-H 0.941) |
-| + realistic upstream PRs, no flags (fp32; bitwise equal output) | 3036 | 1.07x | 3761 / 4670 | identical |
-| upstream + recommended fast flags (`mixed_precision`, channels_last, cudnn.benchmark, TF32) | 1395 | 2.33x | 3420 / 4074 | 0.003 / 0.013 px; EPE 0.318 / 0.938 |
-| + realistic upstream PRs (`pr/combined`, with the flags) | 1188 | 2.74x | 2517 / 3386 | 0.003 / 0.013 px; EPE 0.318 / 0.939 |
-| `portable` (friendly) | 1188 | 2.74x | 2517 / 3386 | identical to the row above |
-| `cuda-kernels` (max) | 487 | 6.68x | 1636 / 2282 | 0.004 / 0.014 px; EPE 0.318 / 0.939 |
+| upstream (fp32) | 3252 | 0.43x / 1.00x | 3763 / 4670 | reference (EPE ETH3D 0.317, Midd-H 0.941) |
+| + realistic upstream PRs, no flags (fp32; bitwise equal output) | 3036 | 0.46x / 1.07x | 3761 / 4670 | identical |
+| upstream + flags (`mixed_precision`, channels_last, `cudnn.benchmark`, TF32) | 1395 | 1.00x / 2.33x | 3420 / 4074 | 0.003 / 0.013 px; EPE 0.318 / 0.938 |
+| + realistic upstream PRs (`pr/combined`, with the flags) | 1188 | 1.17x / 2.74x | 2517 / 3386 | 0.003 / 0.013 px; EPE 0.318 / 0.939 |
+| `portable` (friendly) | 1188 | 1.17x / 2.74x | 2517 / 3386 | identical to the row above |
+| `cuda-kernels` (max) | 487 | 2.86x / 6.68x | 1636 / 2282 | 0.004 / 0.014 px; EPE 0.318 / 0.939 |
 
 **Realistically mergeable upstream: 2.74x of 6.68x**
 
